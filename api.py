@@ -133,21 +133,36 @@ class Api:
 
 
 api = Api()
+
+# Load list of ids from file
 fh = open("tweet_ids.csv","r")
 ids = [int(x) for x in fh.read().split("\n") if x is not '']
+fh.close()
+
+# Sort the ids ascending
 ids.sort()
+
+# Open file for writing tweet data
 fh = open("trump_tweets.ndjson","w")
 
 while ids:
+    # Batch requests so that each request sends a max of 100 ids
     batch = [x for x in ids[:100] if x is not '']
     print ("Fetching batch of {} tweets...".format(len(batch)))
+
+    # Call the API
     tweets = api.statuses_lookup(batch)
+
+    # Sort the returned tweets by their id ascending
     tweets = sorted(tweets, key=lambda k: int(k['id']))
 
+    # Process tweets and write them to file
     for tweet in tweets:
         user = tweet['user']['screen_name'].lower()
-        if user != 'realdonaldtrump':
+        if user != 'realdonaldtrump': # Make sure the tweet is actually from the correct account
             continue
         json_dump = json.dumps(tweet,escape_forward_slashes=False,sort_keys=True,ensure_ascii=True)
         fh.write(json_dump+"\n")
+
+    # Delete previous batch
     del ids[:100]
